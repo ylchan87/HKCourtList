@@ -22,3 +22,7 @@
 # All that matters is that your final data is written to an SQLite database
 # called "data.sqlite" in the current working directory which has at least a table
 # called "data".
+
+import scraperwiki
+scraperwiki.sqlite.save(unique_keys=['name'], data={"name": "susan", "occupation": "software developer"}, table='people')
+scraperwiki.sqlite.save(unique_keys=['name'], data={"name": "proj1", "lead": "susan"}, table='project')

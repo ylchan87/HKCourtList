@@ -24,5 +24,5 @@
 # called "data".
 
 import scraperwiki
-scraperwiki.sqlite.save(unique_keys=['name'], data={"name": "susan", "occupation": "software developer"}, table='people')
-scraperwiki.sqlite.save(unique_keys=['name'], data={"name": "proj1", "lead": "susan"}, table='project')
+scraperwiki.sqlite.save(unique_keys=['name'], data={"name": "susan", "occupation": "software developer"}, table_name='people')
+scraperwiki.sqlite.save(unique_keys=['name'], data={"name": "proj1", "lead": "susan"}, table_name='project')

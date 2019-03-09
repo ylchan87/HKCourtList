@@ -86,11 +86,9 @@ if len(sys.argv) == 3:
     dateObj = datetime.strptime(dateYMD, "%Y%m%d")
     dateDMY = datetime.strftime(dateObj, "%d%m%Y") # 01122018
 
-    session = dm.init()
     url = "https://e-services.judiciary.hk/dcl/view.jsp?lang=tc&date={}&court={}".format(dateDMY, code)
     print ("Parsing %s"% url)
-    r = requests.get(url, headers = header)
-    
+    r = requests.get(url, headers = header)    
     text = r.text
 
     session = dm.init()
@@ -103,7 +101,7 @@ if len(sys.argv) == 1:
     dateDMY = datetime.strftime(dateObj, "%d%m%Y") # 01122018
     dateYMD = datetime.strftime(dateObj, "%Y%m%d")
 
-    session = dm.init("sqlite:///scraperwiki.sqlite")
+    session = dm.init("sqlite:///data.sqlite")
 
     for code in codes:
         code = code.upper()

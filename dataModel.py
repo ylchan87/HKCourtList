@@ -108,12 +108,26 @@ class Event(Base):
     def __repr__(self):
         return "<Event(category='%s', datetime='%s')>" % (
                             self.category, self.datetime)
+    
+    def fullDesc(self):
+        print("category   :", self.category   )
+        print("court      :", self.court      )
+        print("judges     :", self.judges     )
+        print("datetime   :", self.datetime   )
+        print("cases      :", self.cases      )
+        print("parties    :", self.parties    )
+        print("parties_atk:", self.parties_atk)
+        print("parties_def:", self.parties_def)
+        print("tags       :", self.tags       )
+        print("lawyers    :", self.lawyers    )
+        print("lawyers_atk:", self.lawyers_atk)
+        print("lawyers_def:", self.lawyers_def)
 
 class Judge(Base):
     __tablename__ = 'judges'
     id = Column(Integer, primary_key=True)
-    name_zh = Column(String, unique=True)
-    name_en = Column(String, unique=True)
+    name_zh = Column(String, unique=False)
+    name_en = Column(String, unique=False)
 
     events = relationship("Event", 
                           secondary=events_judges,
@@ -150,8 +164,8 @@ class Tag(Base):
     """
     __tablename__ = 'tags'
     id = Column(Integer, primary_key=True)
-    name_zh = Column(String, unique=True)
-    name_en = Column(String, unique=True)
+    name_zh = Column(String, unique=False)
+    name_en = Column(String, unique=False)
 
     events = relationship("Event", 
                           secondary=events_tags,
@@ -168,8 +182,8 @@ class Tag(Base):
 class Lawyer(Base):
     __tablename__ = 'lawyers'
     id = Column(Integer, primary_key=True)
-    name_zh = Column(String, unique=True)
-    name_en = Column(String, unique=True)
+    name_zh = Column(String, unique=False) # '孖士打律師行' = 'Mayer Brown' also 'Mayer Brown JSM'...
+    name_en = Column(String, unique=False)
     
     events = relationship("Event", 
                           secondary=events_lawyers,

@@ -13,7 +13,7 @@ def showParseErr(msg):
     if debug:
         raise ValueError(msg)
     else:
-        print (msg)
+        print ("ParseError: ", msg)
 
 FIND_METADATA        = 0
 FIND_METADATA_MAG    = 1
@@ -60,7 +60,7 @@ transit_map = {
     "OTD"   : (transit_2M_4C, FIND_METADATA),
     "CLPI"  : (transit_2M_4C, FIND_METADATA),
     "MCL"   : (transit_2M_4C, FIND_METADATA),
-    
+
     "CACFI" : (transit_7C   , FIND_HEADER)  ,
     "CFA"   : (transit_7C   , FIND_HEADER)  ,
     "CT"    : (transit_7C   , FIND_HEADER)  ,
@@ -472,7 +472,9 @@ def parse(cat, date, text):
                     if not match: match = ["The Court"] if "The Court" in s else []
                     if not match: match = ["Court of Final Appeal"] if "Court of Final Appeal" in s else []    
                     if not match: match = re.findall("Court[\s]*(?P<target>[A-Za-z0-9.\s]+)", s)
-                    if not match: showParseErr('Error parsing court: %s'%s)
+                    if not match: 
+                        showParseErr('Error parsing court: %s'%s)
+                        continue
                     court = rmAllSpace(match[0])
 
                 elif header==u"法官" or header==u"法官/審裁處成員" or header==u"聆案官":
@@ -487,7 +489,9 @@ def parse(cat, date, text):
 
                 elif header==u"時間":
                     match = re.findall("(?P<hh>[0-9]{1,2})[\s]*:[\s]*(?P<mm>[0-9]{1,2})[\s]*(?P<apm>[am|AM|pm|PM]*)",s)
-                    if not match: showParseErr('Error parsing time: %s'%s)
+                    if not match: 
+                        showParseErr('Error parsing time: %s'%s)
+                        continue
                     hh,mm,apm = match[0]
                     hh = int(hh)
                     mm = int(mm)
@@ -496,7 +500,10 @@ def parse(cat, date, text):
                 
                 elif header==u"案件編號" or header==u"案件號碼" or header==u"案件號碼/.":
                     caseNos = re.findall("(?P<caseNo>[A-Z]{3,4}[\s]*[0-9]*/[0-9]{4})", s)
-                    if not caseNos: showParseErr('Error parsing caseNo: %s'%s)
+                    if not caseNos: 
+                        showParseErr('Error parsing caseNo: %s'%s)
+                        continue
+
                     caseNos = [rmAllSpace(c) for c in caseNos]
                     
                     #chinese desciption of the caseNo, if avaialable
@@ -679,7 +686,7 @@ def parse(cat, date, text):
 
 if __name__=="__main__":
     print (sys.argv)
-    debug = True
+    debug = False
     if len(sys.argv) == 3:
         code = sys.argv[1]
         date = sys.argv[2]
@@ -694,25 +701,31 @@ if __name__=="__main__":
     if len(sys.argv) == 1:
         from glob import glob
 
-        session = dm.init()
+        debug = False
+
+        session = dm.init("sqlite:///data.sqlite")
 
         codes = transit_map.keys()
         for code in codes:
             code = code.upper()
             files = glob("../data/{code}/{code}_*.HTML".format(code=code.upper()))
-            files = files[:10]
+            files.sort()
+            # files = files[:1]
             for filePath in files:
                 print(filePath)
+                dateYMD = re.findall("[0-9]{8}",filePath)[0]
                 f = open(filePath,'r')
                 text = f.read()
                 if len(text)==0: continue
                 if "There is no hearing on this day" in text: continue    
                 
-                events = parse(code, "19700101", text)
+                events = parse(code, dateYMD, text)
 
                 whiteList = [
                     "../data/BP/BP_20180912.HTML", #Judge name hidden in title
                     "../data/FLMAG/FLMAG_20181103.HTML", #really have no cases
                 ]
+                print ("Events parsed from %s : %d"%(filePath, len(events)))
+
                 if not events and filePath not in whiteList and "MAG" not in code: 
-                    raise ValueError("No event parsed")
+                    showParseErr("No event parsed")

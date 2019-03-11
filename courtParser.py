@@ -437,7 +437,8 @@ def parse(cat, date, text):
         #check if row valid, valid row should have caseNo like: XXXX 1234/2017
         cell = row[caseColIdx]
         cell = cell.get_text().strip()
-        caseNos = re.findall("(?P<caseNo>[A-Z]{3,4}[\s]*[0-9]*/[0-9]{4})", cell)
+        caseNos = re.findall("(?P<caseNo>[A-Z]{2,4}[\s]*[0-9]*/[0-9]{4})", cell)
+        if not caseNos and ((u"首次約見" in cell)  or (u"特别程序表" in cell )): caseNos = "FCMC0000/0000" # hack for FMC
         if debug: print (it,ir, caseNos, cell)
         if not caseNos: 
             if ir>=(nr-1) and rowsRead>0:
@@ -499,7 +500,9 @@ def parse(cat, date, text):
                     time = "%02d%02d"%(hh,mm)
                 
                 elif header==u"案件編號" or header==u"案件號碼" or header==u"案件號碼/.":
-                    caseNos = re.findall("(?P<caseNo>[A-Z]{3,4}[\s]*[0-9]*/[0-9]{4})", s)
+                    caseNos = []
+                    if not caseNos: caseNos = re.findall("(?P<caseNo>[A-Z]{2,4}[\s]*[0-9]*/[0-9]{4})", s)
+                    if not caseNos: caseNos = "FCMC0000/0000" if (u"首次約見" in s) or (u"特别程序表" in s ) else []
                     if not caseNos: 
                         showParseErr('Error parsing caseNo: %s'%s)
                         continue

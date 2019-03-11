@@ -686,7 +686,7 @@ def parse(cat, date, text):
 
 if __name__=="__main__":
     print (sys.argv)
-    debug = False
+    debug = True
     if len(sys.argv) == 3:
         code = sys.argv[1]
         date = sys.argv[2]

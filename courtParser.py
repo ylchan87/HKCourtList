@@ -230,11 +230,12 @@ def getDefaultTags(cat):
     if cat in d: return [d[cat]]
     return []
 
-def parse(cat, date, text):
+def parse(cat, date, text, hide_parties=True):
     """
     cat: FMC CFA etc
     date: yyyymmdd
     text: html text to parse
+    hide_parties: to hide suer/defendent names or not
     """
 
     #"Global vars"
@@ -663,6 +664,11 @@ def parse(cat, date, text):
             e.fullDesc()
             print("=====================")
 
+        if hide_parties:
+            if e.parties    : e.parties    ="hidden"
+            if e.parties_atk: e.parties_atk="hidden"
+            if e.parties_def: e.parties_def="hidden"
+
         try:
             dm.session.add(e)
             dm.session.commit()
@@ -736,14 +742,14 @@ if __name__=="__main__":
 
         debug = False
 
-        session = dm.init("sqlite:///data.sqlite")
+        session = dm.init("sqlite:///data_test8.sqlite")
 
         codes = transit_map.keys()
         for code in codes:
             code = code.upper()
             files = glob("../data/{code}/{code}_*.HTML".format(code=code.upper()))
             files.sort()
-            # files = files[:1]
+            files = files[:1]
             for filePath in files:
                 print(filePath)
                 dateYMD = re.findall("[0-9]{8}",filePath)[0]

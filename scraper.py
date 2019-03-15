@@ -115,7 +115,7 @@ if len(sys.argv) == 1:
         if "There is no hearing on this day" in text: continue    
 
         try:
-            events = cp.parse(code, dateYMD, r.text)
+            events = cp.parse(code, dateYMD, r.text, hide_parties=True)
             print ("Events parsed from %s %s: %d"%(code, dateYMD, len(events)))
         except Exception as e:
             print("Fail parsing %s %s"%(code, dateYMD))

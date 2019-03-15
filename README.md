@@ -37,9 +37,8 @@ test script to test extractor.py
 a row in the court's timetable, the "main" table of the SQL DB
 
 ### Case
-Case no. uniquely identifying a case
-A case can have many events (when there's multiple hearings and trials)
-An event can deal with multiple cases at the same time
+Case no. uniquely identifying a case. A case can have many events, when there's multiple hearings and trials.
+An event can also deal with multiple cases at the same time.
 
 many-to-many relationship with event
 
@@ -51,7 +50,7 @@ many-to-many relationship with event
 
 ### Tag
 Could be
-Offence nature of the event (theft, robbery, etc)
-Procedure type of the event (trail, hearing, mention, summon etc)
+1. Offence nature of the event (theft, robbery, etc)
+2. Procedure type of the event (trail, hearing, mention, summon etc)
 
 many-to-many relationship with event

@@ -13,13 +13,19 @@ from sqlalchemy import Table
 
 global session
 session = None
+global Session
+Session = None
 def init(sqlPath='sqlite:///:memory:', echo=False):
     engine = create_engine(sqlPath, echo=echo)
     Base.metadata.create_all(engine)
+    global Session
     Session = sessionmaker(bind=engine)
     global session
     session = Session()
     return session
+
+def get_session():
+    return Session()
 
 def get_or_create(cls, **kwargs):
     if not session: 
@@ -31,6 +37,34 @@ def get_or_create(cls, **kwargs):
         instance = cls(**kwargs)
         session.add(instance)
         session.flush([instance])
+    return instance
+
+def get_or_create_zh_or_en(cls, name_zh, name_en, shorten_names = False):
+    if not session: 
+        print('db not init/connected yet')
+        return None
+
+    instance = session.query(cls).filter_by(name_zh=name_zh).first()
+    if instance:
+        if name_en:
+            if (not instance.name_en) or (shorten_names and (2<len(name_en)<len(instance.name_en))):
+                instance.name_en=name_en
+                session.add(instance)
+                session.flush([instance])
+        return instance
+
+    instance = session.query(cls).filter_by(name_en=name_en).first()
+    if instance:
+        if name_zh:
+            if (not instance.name_zh) or (shorten_names and (1<len(name_zh)<len(instance.name_zh))):
+                instance.name_zh=name_zh
+                session.add(instance)
+                session.flush([instance])
+        return instance
+
+    instance = cls(name_zh=name_zh, name_en=name_en)
+    session.add(instance)
+    session.flush([instance])
     return instance
 
 # association table for many to many relationships
@@ -72,14 +106,18 @@ class Event(Base):
 
     judges = relationship("Judge", 
                           secondary=events_judges,
-                          back_populates='events')
+                          back_populates='events',
+                          lazy="dynamic",
+                          )
 
     datetime = Column(DateTime(), nullable=True)
 
     #sometimes a event can have 2 cases
     cases = relationship("Case", 
                           secondary=events_cases,
-                          back_populates='events')
+                          back_populates='events',
+                          lazy="dynamic",
+                          )
 
     parties = Column(String)
     parties_atk = Column(String)
@@ -87,19 +125,27 @@ class Event(Base):
 
     tags = relationship("Tag", 
                           secondary=events_tags,
-                          back_populates='events')
+                          back_populates='events',
+                          lazy="dynamic",
+                          )
 
     lawyers = relationship("Lawyer", 
                           secondary=events_lawyers,
-                          back_populates='events')
+                          back_populates='events',
+                          lazy="dynamic",
+                          )
 
     lawyers_atk = relationship("Lawyer", 
                           secondary=events_lawyers_atk,
-                          back_populates='events_atk')
+                          back_populates='events_atk',
+                          lazy="dynamic",
+                          )
     
     lawyers_def = relationship("Lawyer", 
                           secondary=events_lawyers_def,
-                          back_populates='events_def')
+                          back_populates='events_def',
+                          lazy="dynamic",
+                          )
 
     @classmethod
     def get_or_create(cls, **kwargs):
@@ -110,18 +156,18 @@ class Event(Base):
                             self.category, self.datetime)
     
     def fullDesc(self):
-        print("category   :", self.category   )
-        print("court      :", self.court      )
-        print("judges     :", self.judges     )
-        print("datetime   :", self.datetime   )
-        print("cases      :", self.cases      )
-        print("parties    :", self.parties    )
-        print("parties_atk:", self.parties_atk)
-        print("parties_def:", self.parties_def)
-        print("tags       :", self.tags       )
-        print("lawyers    :", self.lawyers    )
-        print("lawyers_atk:", self.lawyers_atk)
-        print("lawyers_def:", self.lawyers_def)
+        print("category   :", self.category    )
+        print("court      :", self.court       )
+        print("judges     :", self.judges.all())
+        print("datetime   :", self.datetime    )
+        print("cases      :", self.cases.all() )
+        print("parties    :", self.parties     )
+        print("parties_atk:", self.parties_atk )
+        print("parties_def:", self.parties_def )
+        print("tags       :", self.tags.all()  )
+        print("lawyers    :", self.lawyers.all()    )
+        print("lawyers_atk:", self.lawyers_atk.all())
+        print("lawyers_def:", self.lawyers_def.all())
 
 class Judge(Base):
     __tablename__ = 'judges'
@@ -131,11 +177,17 @@ class Judge(Base):
 
     events = relationship("Event", 
                           secondary=events_judges,
-                          back_populates='judges')
+                          back_populates='judges',
+                          lazy="dynamic",
+                          )
 
     @classmethod
     def get_or_create(cls, **kwargs):
         return get_or_create(cls, **kwargs)
+    
+    @classmethod
+    def get_or_create_zh_or_en(cls, name_zh, name_en):
+        return get_or_create_zh_or_en(cls, name_zh, name_en)
 
     def __repr__(self):
         return "<Judge(name_zh='%s', name_en='%s')>" % (
@@ -148,7 +200,9 @@ class Case(Base):
     description = Column(String)
     events = relationship("Event", 
                           secondary=events_cases,
-                          back_populates='cases')
+                          back_populates='cases',
+                          lazy="dynamic",
+                          )
 
     @classmethod
     def get_or_create(cls, **kwargs):
@@ -169,11 +223,17 @@ class Tag(Base):
 
     events = relationship("Event", 
                           secondary=events_tags,
-                          back_populates='tags')
+                          back_populates='tags',
+                          lazy="dynamic",
+                          )
 
     @classmethod
     def get_or_create(cls, **kwargs):
         return get_or_create(cls, **kwargs)
+    
+    @classmethod
+    def get_or_create_zh_or_en(cls, name_zh, name_en):
+        return get_or_create_zh_or_en(cls, name_zh, name_en, shorten_names=True)
 
     def __repr__(self):
         return "<Tag(name_zh='%s', name_en='%s')>" % (
@@ -187,20 +247,30 @@ class Lawyer(Base):
     
     events = relationship("Event", 
                           secondary=events_lawyers,
-                          back_populates='lawyers')
+                          back_populates='lawyers',
+                          lazy="dynamic",
+                          )
 
     events_atk = relationship("Event", 
                           secondary=events_lawyers_atk,
-                          back_populates='lawyers_atk')
+                          back_populates='lawyers_atk',
+                          lazy="dynamic",
+                          )
     
     events_def = relationship("Event", 
                           secondary=events_lawyers_def,
-                          back_populates='lawyers_def')
+                          back_populates='lawyers_def',
+                          lazy="dynamic",
+                          )
 
     @classmethod
     def get_or_create(cls, **kwargs):
         return get_or_create(cls, **kwargs)
     
+    @classmethod
+    def get_or_create_zh_or_en(cls, name_zh, name_en):
+        return get_or_create_zh_or_en(cls, name_zh, name_en)
+
     def __repr__(self):
         return "<Lawyer(name_zh='%s', name_en='%s')>" % (
                             self.name_zh, self.name_en)

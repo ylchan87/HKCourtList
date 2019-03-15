@@ -129,23 +129,33 @@ def rmNeighborDupElems(l):
     return l
 
 def detectLang(s):
-    if s.strip()=="": return "nil"
+    s = s.strip()
+    if s=="": return "nil"
 
-    nonNumerical = re.sub('[/()\-.0-9\s]', '', s)
+    nonNumerical = re.sub('[][/()\-.0-9IV\"\'〔〕《》（）’ˇＩ\s]', '', s)
     if len(nonNumerical)==0: return "num"
 
-    nonEnChar = re.sub('[][!@#$%^&*/()\-.,A-Za-z0-9\s]', '', s)
-    if len(nonEnChar)==0: return "en"
+    # 27(a) 104A 8A(1) 16CA(1)etc.
+    if re.fullmatch("[0-9]{1,3}[A-Z]{0,2}[\s(]?[0-9A-Za-z]{1,2}[)\s]?", s): return "num"
 
+    # 25mm 10km etc.
+    if re.fullmatch("[0-9]{1,4}[\s(]*(mm|cm|m|km)?[)\s]*", s): return "num"
+
+    nonEnChar = re.sub('[][!@#$%^&*/()\+-.\'\"〔〕《》（）’ˇ:,A-Za-z0-9\s]', '', s)
+    if len(nonEnChar)==0: 
+        if len(s)<=3 and s.upper() not in ["THE","AND","BUT","AN","CRB"]:
+            return "num"  ## "P" in "P"牌, DVD, OK, etc    
+        else:
+            return "en"
     return "zh"
-
-def getLangPairs(inList):
+    
+def getLangPairs(inList, mergeSameLang = False):
     """
     inList is a list of string
     returns list of ("中","en") tuple
 
     eg.
-    In [23]: getLangPair( ["呂羅律師", "事務所", "Lui & Law", "貝克.麥堅時律師事務所","Baker & McKenzie"])
+    In [23]: getLangPair( ["呂羅律師", "事務所", "Lui & Law", "貝克.麥堅時律師事務所","Baker & McKenzie"], mergeSameLang=True)
     Out[23]: [('呂羅律師事務所', 'Lui & Law'), ('貝克.麥堅時律師事務所', 'Baker & McKenzie')]
     
     In [24]: getLangPair( ["Lui & Law", "Baker & McKenzie"])
@@ -153,7 +163,7 @@ def getLangPairs(inList):
     """
     l = inList.copy()
     l = [s.strip() for s in l]
-
+    
     # merge nearby same lang tokens
     pos = 1
     while pos<len(l):
@@ -162,8 +172,16 @@ def getLangPairs(inList):
             continue
         langA = detectLang(l[pos])
         langB = detectLang(l[pos-1])
-        if langA == langB or langA=="num" or langB=="num":
+        if langA=="num" or langB=="num":
             l[pos-1] += l[pos]
+            del l[pos]
+            continue
+        if mergeSameLang and (langA == langB == 'zh'):
+            l[pos-1] += l[pos]
+            del l[pos]
+            continue
+        if mergeSameLang and (langA == langB == 'en'):
+            l[pos-1] += " " + l[pos] #if eng add space between merge
             del l[pos]
             continue
         pos +=1
@@ -171,7 +189,7 @@ def getLangPairs(inList):
     # search zh,en pairs
     output = []
     while l:
-        if l[0]=="":
+        if (l[0]==""):
             l.pop(0)
             continue
 
@@ -189,24 +207,25 @@ def getLangPairs(inList):
                 l.pop(0)
         else:
             #Should not reach here
-            showParseErr("getLangPairs error: %s" % l)
+            # showParseErr("getLangPairs error: %s" % l)
             l.pop(0)
-
+    if debug: 
+        print ("form pair")
+        print (inList)
+        print (output)
     return output
-
-        
 
 def getDefaultTags(cat):
     cat = cat.upper()
     d = {
-        'OTD'   : dm.Tag.get_or_create(name_zh=u"反對自動解除破產"     , name_en="Objections to discharge"),
-        'MIA'   : dm.Tag.get_or_create(name_zh=u"有關無力償還的雜項申請", name_en="Miscellaneous Insolvency Application"),
-        'O14'   : dm.Tag.get_or_create(name_zh=u"簡易判決"     , name_en="O.14 List"),
-        'BP'    : dm.Tag.get_or_create(name_zh=u"破產呈請"     , name_en="Bankruptcy Petition"),
-        'CLCMC' : dm.Tag.get_or_create(name_zh=u"核對列表聆訊/案件管理會議"     , name_en="Check List/Case Management Conference"),
-        'CRHPI' : dm.Tag.get_or_create(name_zh=u"核對列表審核聆訊 (人身傷亡案件)"     , name_en="Checklist Review Hearing(PI Cases)"),
-        'CWUP'  : dm.Tag.get_or_create(name_zh=u"公司清盤呈請"     , name_en="Companies Winding-Up Petition"),
-        'LB'    : dm.Tag.get_or_create(name_zh=u"勞資審裁處"     , name_en="Labour Tribunal"),
+        'OTD'   : dm.Tag.get_or_create_zh_or_en(name_zh=u"反對自動解除破產"     , name_en="Objections to discharge"),
+        'MIA'   : dm.Tag.get_or_create_zh_or_en(name_zh=u"有關無力償還的雜項申請", name_en="Miscellaneous Insolvency Application"),
+        'O14'   : dm.Tag.get_or_create_zh_or_en(name_zh=u"簡易判決"     , name_en="O.14 List"),
+        'BP'    : dm.Tag.get_or_create_zh_or_en(name_zh=u"破產呈請"     , name_en="Bankruptcy Petition"),
+        'CLCMC' : dm.Tag.get_or_create_zh_or_en(name_zh=u"核對列表聆訊/案件管理會議"     , name_en="Check List/Case Management Conference"),
+        'CRHPI' : dm.Tag.get_or_create_zh_or_en(name_zh=u"核對列表審核聆訊 (人身傷亡案件)"     , name_en="Checklist Review Hearing(PI Cases)"),
+        'CWUP'  : dm.Tag.get_or_create_zh_or_en(name_zh=u"公司清盤呈請"     , name_en="Companies Winding-Up Petition"),
+        'LB'    : dm.Tag.get_or_create_zh_or_en(name_zh=u"勞資審裁處"     , name_en="Labour Tribunal"),
     }
     if cat in d: return [d[cat]]
     return []
@@ -267,7 +286,7 @@ def parse(cat, date, text):
             if len(match)>0:
                 name_zh = rmAllSpace(match[0][0])
                 name_en = rmDupSpace(match[0][1])
-                judge = dm.Judge.get_or_create(name_zh=name_zh, name_en=name_en)
+                judge = dm.Judge.get_or_create_zh_or_en(name_zh=name_zh, name_en=name_en)
                 judges = [judge] 
                 continue
         if debug: print (court, judge)
@@ -307,7 +326,7 @@ def parse(cat, date, text):
         if len(match)>0:
             name_zh = rmAllSpace(match[0][0])
             name_en = rmDupSpace(match[0][1])
-            judge = dm.Judge.get_or_create(name_zh=name_zh, name_en=name_en)
+            judge = dm.Judge.get_or_create_zh_or_en(name_zh=name_zh, name_en=name_en)
             judges = [judge] 
         elif s.strip("*")=="":
             # On ETNMAG_20180816.HTML, there is 
@@ -352,7 +371,7 @@ def parse(cat, date, text):
         if len(match)>0:
             name_zh = rmAllSpace(match[0][0])
             name_en = rmDupSpace(match[0][1])
-            judge = dm.Judge.get_or_create(name_zh=name_zh, name_en=name_en)
+            judge = dm.Judge.get_or_create_zh_or_en(name_zh=name_zh, name_en=name_en)
             judges = [judge] 
         else:
             showParseErr("Parse judge failed: %s"%s)
@@ -438,7 +457,7 @@ def parse(cat, date, text):
         cell = row[caseColIdx]
         cell = cell.get_text().strip()
         caseNos = re.findall("(?P<caseNo>[A-Z]{2,4}[\s]*[0-9]*/[0-9]{4})", cell)
-        if not caseNos and ((u"首次約見" in cell)  or (u"特别程序表" in cell )): caseNos = "FCMC0000/0000" # hack for FMC
+        if not caseNos and ((u"首次約見" in cell)  or (u"特别程序表" in cell )): caseNos = ["FCMC0000/0000"] # hack for FMC
         if debug: print (it,ir, caseNos, cell)
         if not caseNos: 
             if ir>=(nr-1) and rowsRead>0:
@@ -454,9 +473,14 @@ def parse(cat, date, text):
             row = tables[it][end_ir]
             cell = row[caseColIdx]
             cell = cell.get_text().strip()
-            if len(cell)>0: break
+            if len(cell)>0: 
+                caseNosNext = re.findall("(?P<caseNo>[A-Z]{2,4}[\s]*[0-9]*/[0-9]{4})", cell)
+                if debug: print("caseNos/next", caseNos, caseNosNext, caseNosNext!=caseNos)
+                if caseNosNext!= caseNos: break
             if all([ cell.get_text().strip()=="" for cell in row]): break
-        # if debug: print(end_ir)
+            if end_ir+1==nr: end_ir=nr # ugly...  
+            
+        if debug: print("ir endir nr", ir, end_ir, nr)
 
         for ir in range(ir,end_ir):
             row = tables[it][ir]
@@ -480,12 +504,12 @@ def parse(cat, date, text):
 
                 elif header==u"法官" or header==u"法官/審裁處成員" or header==u"聆案官":
                     ps = [rmDupSpace(p.get_text()) for p in cell.find_all("p")]
-                    langPairs = getLangPairs(ps)
+                    langPairs = getLangPairs(ps, mergeSameLang=True)
                     
                     for pair in langPairs:
                         name_zh = rmPS(rmAllSpace(pair[0])) if pair[0] else None
                         name_en = rmPS(rmDupSpace(pair[1])) if pair[1] else None
-                        judge = dm.Judge.get_or_create(name_zh=name_zh, name_en=name_en)
+                        judge = dm.Judge.get_or_create_zh_or_en(name_zh=name_zh, name_en=name_en)
                         local_judges.append(judge)
 
                 elif header==u"時間":
@@ -502,7 +526,7 @@ def parse(cat, date, text):
                 elif header==u"案件編號" or header==u"案件號碼" or header==u"案件號碼/.":
                     caseNos = []
                     if not caseNos: caseNos = re.findall("(?P<caseNo>[A-Z]{2,4}[\s]*[0-9]*/[0-9]{4})", s)
-                    if not caseNos: caseNos = "FCMC0000/0000" if (u"首次約見" in s) or (u"特别程序表" in s ) else []
+                    if not caseNos: caseNos = ["FCMC0000/0000"] if (u"首次約見" in s) or (u"特别程序表" in s ) else []
                     if not caseNos: 
                         showParseErr('Error parsing caseNo: %s'%s)
                         continue
@@ -556,14 +580,18 @@ def parse(cat, date, text):
                     else:
                         ps = [p.get_text() for p in ps]
                     ps = [rmDupSpace(p) for p in ps]
-                    langPairs = getLangPairs(ps)
+                    if debug: print("ps@性質", ps)
+                    langPairs = getLangPairs(ps, mergeSameLang=True)
                     
                     for pair in langPairs:
-                        name_zh = re.sub("\([0-9]{1,2}\)","", pair[0]) if pair[0] else None
-                        name_en = re.sub("\([0-9]{1,2}\)","", pair[1]) if pair[1] else None
-                        # re.sub("^\([0-9]+\)","", name_zh) #removes (1) (2) etc. at start 
+                        #removes (1) (2) 1. 2. etc. at start and end
+                        tmp1 = "\([0-9]{1,2}\)"
+                        tmp2 = "[0-9]{1,2}\."
+                        pattern = "(^{0}|^{1}|{0}$|{1}$)".format(tmp1,tmp2)
+                        name_zh = rmAllSpace(re.sub(pattern,"", pair[0])) if pair[0] else None
+                        name_en = rmDupSpace(re.sub(pattern,"", pair[1])) if pair[1] else None
 
-                        tag = dm.Tag.get_or_create(name_zh=name_zh, name_en=name_en)
+                        tag = dm.Tag.get_or_create_zh_or_en(name_zh=name_zh, name_en=name_en)
                         tags.append(tag)
 
                 elif header==u"應訊代表":
@@ -573,12 +601,13 @@ def parse(cat, date, text):
                     endPos = [i for i,p in enumerate(ps) if "parties in person" in p.lower()]
                     if len(endPos)>0 : ps = ps[0:endPos[0]]
 
+                    # if debug: print("ps@應訊代表", ps)
                     langPairs = getLangPairs(ps)
                     
                     for pair in langPairs:
                         name_zh = pair[0] if pair[0] else None
                         name_en = pair[1] if pair[1] else None
-                        lawyer = dm.Lawyer.get_or_create(name_zh=name_zh, name_en=name_en)
+                        lawyer = dm.Lawyer.get_or_create_zh_or_en(name_zh=name_zh, name_en=name_en)
                         lawyers.append(lawyer)
 
                 elif header=="":
@@ -690,6 +719,7 @@ def parse(cat, date, text):
 if __name__=="__main__":
     print (sys.argv)
     debug = True
+    # debug = False
     if len(sys.argv) == 3:
         code = sys.argv[1]
         date = sys.argv[2]
@@ -699,7 +729,7 @@ if __name__=="__main__":
         text = f.read()
 
         session = dm.init()
-        parse(code, date, text)
+        events = parse(code, date, text)
     
     if len(sys.argv) == 1:
         from glob import glob

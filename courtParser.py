@@ -742,14 +742,14 @@ if __name__=="__main__":
 
         debug = False
 
-        session = dm.init("sqlite:///data_test8.sqlite")
+        session = dm.init("sqlite:///data_test9.sqlite")
 
         codes = transit_map.keys()
         for code in codes:
             code = code.upper()
             files = glob("../data/{code}/{code}_*.HTML".format(code=code.upper()))
             files.sort()
-            files = files[:1]
+            # files = files[:1]
             for filePath in files:
                 print(filePath)
                 dateYMD = re.findall("[0-9]{8}",filePath)[0]

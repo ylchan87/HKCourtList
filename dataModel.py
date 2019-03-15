@@ -44,23 +44,25 @@ def get_or_create_zh_or_en(cls, name_zh, name_en, shorten_names = False):
         print('db not init/connected yet')
         return None
 
-    instance = session.query(cls).filter_by(name_zh=name_zh).first()
-    if instance:
-        if name_en:
-            if (not instance.name_en) or (shorten_names and (2<len(name_en)<len(instance.name_en))):
-                instance.name_en=name_en
-                session.add(instance)
-                session.flush([instance])
-        return instance
+    if name_zh:
+        instance = session.query(cls).filter_by(name_zh=name_zh).first()
+        if instance:
+            if name_en:
+                if (not instance.name_en) or (shorten_names and (2<len(name_en)<len(instance.name_en))):
+                    instance.name_en=name_en
+                    session.add(instance)
+                    session.flush([instance])
+            return instance
 
-    instance = session.query(cls).filter_by(name_en=name_en).first()
-    if instance:
-        if name_zh:
-            if (not instance.name_zh) or (shorten_names and (1<len(name_zh)<len(instance.name_zh))):
-                instance.name_zh=name_zh
-                session.add(instance)
-                session.flush([instance])
-        return instance
+    if name_en:
+        instance = session.query(cls).filter_by(name_en=name_en).first()
+        if instance:
+            if name_zh:
+                if (not instance.name_zh) or (shorten_names and (1<len(name_zh)<len(instance.name_zh))):
+                    instance.name_zh=name_zh
+                    session.add(instance)
+                    session.flush([instance])
+            return instance
 
     instance = cls(name_zh=name_zh, name_en=name_en)
     session.add(instance)

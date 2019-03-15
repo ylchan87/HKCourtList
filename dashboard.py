@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 from dash.dependencies import Input, Output
 
-session = dm.init("sqlite:///data.sqlite") #init sqlAlchemy datamodel
+session = dm.init("sqlite:///data_test9.sqlite") #init sqlAlchemy datamodel
 
 tags = session.query(dm.Tag).order_by(dm.Tag.name_en.asc()).all()
 

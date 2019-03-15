@@ -8,6 +8,20 @@ from collections import OrderedDict
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime
 
+# ============================================
+# About the logic flow
+# ============================================
+# The entry point is def parse(...)
+# It runs a simple state machine, 
+# depending on current state it calls different subfunctions:
+#   find_header
+#   find_metadata
+#   read_row
+#   etc.
+#
+# Depending on the court type, different state machine is used
+# this is specified by transit_map
+
 debug = False
 def showParseErr(msg):
     if debug:
@@ -15,6 +29,7 @@ def showParseErr(msg):
     else:
         print ("ParseError: ", msg)
 
+# States
 FIND_METADATA        = 0
 FIND_METADATA_MAG    = 1
 FIND_METADATA_FMC_SP = 2
@@ -49,7 +64,7 @@ transit_FMC = {
     FIND_METADATA_FMC_SP : { 0 : FIND_METADATA_FMC_SP , 1 : FIND_HEADER          , },
 }
 
-#The transot table and init action to use for each court type
+#The transit table and init action to use for each court type
 transit_map = {
     "BP"    : (transit_2M_4C, FIND_METADATA),
     "CLCMC" : (transit_2M_4C, FIND_METADATA),
@@ -79,6 +94,9 @@ transit_map = {
     "WKMAG" : (transit_2M_5C   , FIND_METADATA_MAG)  ,
 }
 
+# ============================================
+# Utils func
+# ============================================
 def rmAllSpace(s):
     """
     remove all space
@@ -230,6 +248,11 @@ def getDefaultTags(cat):
     if cat in d: return [d[cat]]
     return []
 
+#===========================================
+# The entry point of courtParser
+# For 1st read, I recommend
+# read the main body first then the subfunctions
+#===========================================
 def parse(cat, date, text, hide_parties=True):
     """
     cat: FMC CFA etc
@@ -238,7 +261,7 @@ def parse(cat, date, text, hide_parties=True):
     hide_parties: to hide suer/defendent names or not
     """
 
-    #"Global vars"
+    #"Global vars", their values can be updated in the subfunctions of def parse(...)
 
     #cat = None
     court = None
@@ -258,6 +281,9 @@ def parse(cat, date, text, hide_parties=True):
     caseColIdx = 0
     rowsRead = 0
 
+    #===========================================
+    # sub functions to be called in the state machine loop
+    #===========================================
     def find_metadata():
         nonlocal it
         nonlocal ir
@@ -686,7 +712,7 @@ def parse(cat, date, text, hide_parties=True):
             return 0 #continue read_row
 
     #===========================================
-    # Body of def parse(cat, date, text)
+    # Main body of def parse(...)
     #===========================================
     soup = BeautifulSoup( text, 'html.parser')
     tables = soup.find_all('table')

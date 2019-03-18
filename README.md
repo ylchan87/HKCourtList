@@ -25,7 +25,7 @@ the sqlAlchemy data model for the court cases
 
 `extractor.py`
 
-util to explodes a html table to a python list of list (i.e. 2D array)
+util to explode a html table to a python list of list (i.e. 2D array)
 
 `testTableExtract.py`
 
@@ -51,6 +51,6 @@ many-to-many relationship with event
 ### Tag
 Could be
 1. Offence nature of the event (theft, robbery, etc)
-2. Procedure type of the event (trail, hearing, mention, summon etc)
+2. Procedure type of the event (trial, hearing, mention, summon etc)
 
 many-to-many relationship with event
